@@ -1,0 +1,41 @@
+{
+  "useMyLocation": "Use my location",
+  "locating": "Locating...",
+  "onlyOffers": "Offers only",
+  "onlyFavoriteProducers": "Favorite producers only",
+  "newRating": "New",
+  "toggleFavorite": "Toggle favorite",
+  "offerAvailable": "Offer available",
+  "openInGoogleMaps": "Open in Google Maps",
+  "reportProduct": "Report product",
+  "reportProducer": "Report producer",
+  "reportTitlePrefix": "Report",
+  "reportDialogDescription": "Send a clear report to the admin team for moderation.",
+  "reportReason": "Reason",
+  "reportDescription": "Description",
+  "reportDescriptionPlaceholder": "Describe the issue clearly",
+  "submitReport": "Submit report",
+  "reportSubmitted": "Report submitted",
+  "reportFailed": "Failed to submit report",
+  "harvestDateLabel": "Harvest date",
+  "harvestWindowLabel": "Harvest window",
+  "seasonalLabel": "Seasonal",
+  "toLabel": "to",
+  "producerRatingLabel": "Producer rating",
+  "favoriteProducer": "Favorite producer",
+  "favoritedProducer": "Favorited producer",
+  "favoriteProducerAdded": "Producer added to favorites",
+  "favoriteProducerRemoved": "Producer removed from favorites",
+  "favoriteProducerFailed": "Failed to update favorite producer",
+  "similarProducts": "Similar products",
+  "catalog": {
+    "title": "Products",
+    "subtitle": "Products feature placeholders"
+  },
+  "form": {
+    "title": "Product form placeholders"
+  },
+  "table": {
+    "title": "Product table placeholders"
+  }
+}

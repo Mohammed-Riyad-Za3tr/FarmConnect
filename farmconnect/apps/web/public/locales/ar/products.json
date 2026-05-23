@@ -1,0 +1,41 @@
+{
+  "useMyLocation": "استعمل موقعي",
+  "locating": "جار تحديد الموقع...",
+  "onlyOffers": "العروض فقط",
+  "onlyFavoriteProducers": "المنتجون المفضلون فقط",
+  "newRating": "جديد",
+  "toggleFavorite": "تبديل المفضلة",
+  "offerAvailable": "يوجد عرض",
+  "openInGoogleMaps": "افتح في Google Maps",
+  "reportProduct": "الإبلاغ عن المنتج",
+  "reportProducer": "الإبلاغ عن المنتج",
+  "reportTitlePrefix": "إبلاغ",
+  "reportDialogDescription": "أرسل إبلاغا واضحا إلى المشرف للمراجعة.",
+  "reportReason": "السبب",
+  "reportDescription": "الوصف",
+  "reportDescriptionPlaceholder": "اشرح المشكلة بوضوح",
+  "submitReport": "إرسال الإبلاغ",
+  "reportSubmitted": "تم إرسال الإبلاغ",
+  "reportFailed": "فشل إرسال الإبلاغ",
+  "harvestDateLabel": "تاريخ الحصاد",
+  "harvestWindowLabel": "فترة الحصاد",
+  "seasonalLabel": "موسمي",
+  "toLabel": "إلى",
+  "producerRatingLabel": "تقييم المنتج",
+  "favoriteProducer": "إضافة المنتج للمفضلة",
+  "favoritedProducer": "منتج مفضل",
+  "favoriteProducerAdded": "تمت إضافة المنتج إلى المفضلة",
+  "favoriteProducerRemoved": "تمت إزالة المنتج من المفضلة",
+  "favoriteProducerFailed": "تعذر تحديث مفضلة المنتج",
+  "similarProducts": "منتجات مشابهة",
+  "catalog": {
+    "title": "المنتجات",
+    "subtitle": "عناصر أولية لميزة المنتجات"
+  },
+  "form": {
+    "title": "عناصر أولية لنموذج المنتج"
+  },
+  "table": {
+    "title": "عناصر أولية لجدول المنتجات"
+  }
+}

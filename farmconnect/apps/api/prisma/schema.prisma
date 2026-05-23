@@ -1,0 +1,781 @@
+// FarmConnect — Prisma Schema
+// Phase 2A: Identity & Profile models
+// Phase 2B: Product, Cart, and Order models
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  PRODUCER
+  BUYER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+  DELETED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  OUT_OF_STOCK
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  UNPAID
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum DeliveryStatus {
+  NOT_SHIPPED
+  PREPARING
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  FAILED_DELIVERY
+  RETURNED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DELIVERY
+}
+
+enum BuyerBusinessType {
+  INDIVIDUAL
+  RESTAURANT
+  HOTEL
+  WHOLESALE
+  RETAIL
+  OTHER
+}
+
+// ─── Phase 2C Enums ──────────────────────────────────────────────────────────
+
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+  BANK_TRANSFER
+  CIB_CARD
+  EDAHABIA
+}
+
+enum PaymentEventType {
+  INITIATED
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  REFUNDED
+  CHARGEBACK
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum NotificationType {
+  ORDER_PLACED
+  ORDER_CONFIRMED
+  ORDER_SHIPPED
+  ORDER_DELIVERED
+  ORDER_CANCELLED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  PRODUCT_LOW_STOCK
+  PRODUCER_VERIFIED
+  PRODUCER_REJECTED
+  GENERAL
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  VERIFY
+  REJECT
+  SUSPEND
+  UNSUSPEND
+}
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+enum ReportTargetType {
+  USER
+  PRODUCT
+  ORDER
+}
+
+enum ReportReason {
+  SPAM
+  FRAUD
+  ABUSE
+  INAPPROPRIATE_CONTENT
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  RESOLVED
+  REJECTED
+}
+
+enum ProductUnit {
+  KG
+  PIECE
+  BOX
+}
+
+enum ProductLogType {
+  WATERING
+  HARVEST
+  FERTILIZE
+  OTHER
+}
+
+// ─── Phase 2A: Identity & Profile ─────────────────────────────────────────────
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String
+  role         Role       @default(BUYER)
+  status       UserStatus @default(PENDING_VERIFICATION)
+  avatarUrl    String?
+  phone        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  refreshTokens    RefreshToken[]
+  producerProfile  ProducerProfile?
+  buyerProfile     BuyerProfile?
+  addresses        Address[]
+  cart             Cart?
+  orders           Order[]
+  reviews          Review[]       @relation("buyer_reviews")
+  favoriteProducts FavoriteProduct[]
+  favoriteProducers FavoriteProducer[]
+  reportsSubmitted Report[]       @relation("reporter_reports")
+
+  // Admin: verification reviews performed by this user
+  verificationReviews ProducerVerificationRequest[] @relation("reviewer")
+
+  // Phase 2C back-relations
+  notifications     Notification[]
+  aiRecommendations AiRecommendation[]
+  auditLogs         AuditLog[]
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  token     String    @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model ProducerProfile {
+  id                 String             @id @default(uuid())
+  userId             String             @unique
+  businessName       String
+  businessType       String?
+  bio                String?
+  latitude           Decimal?           @db.Decimal(9, 6)
+  longitude          Decimal?           @db.Decimal(9, 6)
+  producerOffersDelivery Boolean        @default(false)
+  wilaya             String            // Algerian province (1–58)
+  commune            String
+  nif                String?            @unique // Numéro d'Identification Fiscale
+  nis                String?            @unique
+  nifDocumentUrl     String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user                 User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products             Product[]
+  verificationRequests ProducerVerificationRequest[]
+  payouts              Payout[]
+  reviewsReceived      Review[]
+  favoritedBy          FavoriteProducer[]
+  coupons              Coupon[]
+
+  @@index([wilaya])
+  @@index([verificationStatus])
+  @@map("producer_profiles")
+}
+
+model ProducerVerificationRequest {
+  id                String             @id @default(uuid())
+  producerProfileId String
+  status            VerificationStatus @default(PENDING)
+  notes             String?
+  // Array of document URLs submitted with this request
+  documents         Json               @default("[]")
+  submittedAt       DateTime           @default(now())
+  reviewedAt        DateTime?
+  reviewedById      String?
+
+  producerProfile ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+  reviewer        User?           @relation("reviewer", fields: [reviewedById], references: [id])
+
+  @@index([producerProfileId])
+  @@index([status])
+  @@map("producer_verification_requests")
+}
+
+model BuyerProfile {
+  id           String            @id @default(uuid())
+  userId       String            @unique
+  businessType BuyerBusinessType?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("buyer_profiles")
+}
+
+model Address {
+  id            String   @id @default(uuid())
+  userId        String
+  label         String   @default("home") // e.g. "home", "work", "other"
+  recipientName String
+  phone         String
+  wilaya        String
+  commune       String
+  street        String
+  postalCode    String?
+  isDefault     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[] // snapshot reference — address persists even if changed later
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+// ─── Phase 2B: Product ────────────────────────────────────────────────────────
+
+model Category {
+  id        String   @id @default(uuid())
+  nameEn    String
+  nameAr    String
+  slug      String   @unique
+  parentId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent      Category?    @relation("subcategories", fields: [parentId], references: [id])
+  children    Category[]   @relation("subcategories")
+  products    Product[]
+  aiForecasts AiForecast[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  producerId  String
+  categoryId  String?
+  // Localised: { "en": "Fresh Tomatoes", "ar": "طماطم طازجة" }
+  title       Json
+  description Json
+  slug        String        @unique
+  price       Decimal       @db.Decimal(10, 2)
+  currency    String        @default("DZD")
+  unit        ProductUnit   @default(KG)
+  recipePdfUrl String?
+  harvestDate DateTime?
+  harvestWindowStart DateTime?
+  harvestWindowEnd DateTime?
+  isSeasonal Boolean       @default(false)
+  seasonStartMonth Int?
+  seasonEndMonth Int?
+  stock       Int           @default(0)
+  minOrderQty Int           @default(1)
+  maxOrderQty Int           @default(10000)
+  status      ProductStatus @default(DRAFT)
+  tags        String[]      @default([])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?     // soft-delete
+
+  producer          ProducerProfile   @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  category          Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images            ProductImage[]
+  cartItems         CartItem[]
+  orderItems        OrderItem[]
+  aiRecommendations AiRecommendation[]
+  aiForecasts       AiForecast[]
+  reviews           Review[]
+  favoritedBy       FavoriteProduct[]
+  logs              ProductLog[]
+
+  @@index([producerId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([slug])
+  @@map("products")
+}
+
+model ProductLog {
+  id        String         @id @default(uuid())
+  productId String
+  type      ProductLogType
+  note      String
+  happenedAt DateTime
+  createdBy String
+  createdAt DateTime       @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, happenedAt])
+  @@map("product_logs")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  url       String
+  altText   String?
+  position  Int      @default(0) // display order
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ─── Phase 2B: Cart ───────────────────────────────────────────────────────────
+
+model Cart {
+  id        String   @id @default(uuid())
+  buyerId   String   @unique // one cart per buyer
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  buyer User       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  items CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  cartId    String
+  productId String
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId]) // one row per product per cart
+  @@index([cartId])
+  @@map("cart_items")
+}
+
+// ─── Phase 2B: Order ──────────────────────────────────────────────────────────
+
+model Order {
+  id             String         @id @default(uuid())
+  buyerId        String
+  buyerAddressId String?        // nullable: address may be deleted
+  status         OrderStatus    @default(PENDING)
+  paymentStatus  PaymentStatus  @default(UNPAID)
+  deliveryStatus DeliveryStatus @default(NOT_SHIPPED)
+  deliveryMethod DeliveryMethod @default(PICKUP)
+  deliveryFee    Decimal?       @db.Decimal(10, 2)
+  deliveryVerificationToken String?
+  verifiedAt      DateTime?
+  couponCode     String?
+  discountAmount Decimal?       @db.Decimal(10, 2)
+  total          Decimal        @db.Decimal(10, 2)
+  currency       String         @default("DZD")
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  buyer             User               @relation(fields: [buyerId], references: [id])
+  buyerAddress      Address?           @relation(fields: [buyerAddressId], references: [id], onDelete: SetNull)
+  items             OrderItem[]
+  payment           Payment?
+  deliveryTrackings DeliveryTracking[]
+  reviews           Review[]
+
+  @@index([buyerId])
+  @@index([buyerId, createdAt])
+  @@index([status])
+  @@index([paymentStatus])
+  @@map("orders")
+}
+
+model OrderItem {
+  id      String  @id @default(uuid())
+  orderId String
+  // Nullable: product may be soft-deleted but order history must be preserved
+  productId String?
+
+  // ── Point-in-time snapshot ──────────────────────────────────────────────────
+  // Captured at checkout so the order record is immutable after placement.
+  // Shape: { title: { en: string, ar: string }, imageUrl: string, unit: string }
+  productSnapshot Json
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+  currency  String  @default("DZD")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  orderId    String
+  productId  String
+  producerId String
+  buyerId    String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  order    Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  producer ProducerProfile @relation(fields: [producerId], references: [id], onDelete: Cascade)
+  buyer    User            @relation("buyer_reviews", fields: [buyerId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, productId, orderId])
+  @@index([productId])
+  @@index([producerId])
+  @@index([buyerId])
+  @@index([orderId])
+  @@map("reviews")
+}
+
+model FavoriteProduct {
+  id        String   @id @default(uuid())
+  buyerId   String
+  productId String
+  createdAt DateTime @default(now())
+
+  buyer   User    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, productId])
+  @@index([buyerId])
+  @@index([productId])
+  @@map("favorite_products")
+}
+
+model FavoriteProducer {
+  id         String   @id @default(uuid())
+  buyerId    String
+  producerId String
+  createdAt  DateTime @default(now())
+
+  buyer    User            @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  producer ProducerProfile @relation(fields: [producerId], references: [id], onDelete: Cascade)
+
+  @@unique([buyerId, producerId])
+  @@index([buyerId])
+  @@index([producerId])
+  @@map("favorite_producers")
+}
+
+model Coupon {
+  id         String     @id @default(uuid())
+  code       String     @unique
+  producerId String
+  type       CouponType
+  amount     Decimal    @db.Decimal(10, 2)
+  startsAt   DateTime
+  endsAt     DateTime
+  usageLimit Int?
+  usedCount  Int        @default(0)
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  producer ProducerProfile @relation(fields: [producerId], references: [id], onDelete: Cascade)
+
+  @@index([producerId])
+  @@index([code])
+  @@map("coupons")
+}
+
+model Report {
+  id           String           @id @default(uuid())
+  reporterId   String
+  targetType   ReportTargetType
+  targetId     String
+  reason       ReportReason
+  description  String
+  status       ReportStatus     @default(OPEN)
+  internalNote String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  reporter User @relation("reporter_reports", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([reporterId, createdAt])
+  @@index([targetType, targetId])
+  @@index([status, createdAt])
+  @@map("reports")
+}
+
+// ─── Phase 2C: Payment ────────────────────────────────────────────────────────
+
+model Payment {
+  id              String        @id @default(uuid())
+  orderId         String        @unique // one payment record per order
+  method          PaymentMethod
+  status          PaymentStatus @default(PENDING)
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("DZD")
+  gatewayRef      String?       // external transaction reference
+  gatewayResponse Json?         // raw gateway response payload
+  paidAt          DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order  Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  events PaymentEvent[]
+
+  @@index([status])
+  @@index([method])
+  @@index([gatewayRef])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id        String           @id @default(uuid())
+  paymentId String
+  type      PaymentEventType
+  // Arbitrary metadata (gateway codes, error messages, amounts, etc.)
+  payload   Json             @default("{}")
+  createdAt DateTime         @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([createdAt])
+  @@map("payment_events")
+}
+
+// ─── Phase 2C: Payout ─────────────────────────────────────────────────────────
+
+model Payout {
+  id                String       @id @default(uuid())
+  producerProfileId String
+  amount            Decimal      @db.Decimal(10, 2)
+  currency          String       @default("DZD")
+  status            PayoutStatus @default(PENDING)
+  bankName          String?
+  bankAccount       String?      // masked IBAN / RIB stored — never full account number
+  reference         String?      // bank transfer reference issued after processing
+  notes             String?
+  processedAt       DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  producer ProducerProfile @relation(fields: [producerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([producerProfileId])
+  @@index([status])
+  @@map("payouts")
+}
+
+// ─── Phase 2C: Delivery Tracking ──────────────────────────────────────────────
+
+model DeliveryTracking {
+  id          String         @id @default(uuid())
+  orderId     String
+  status      DeliveryStatus
+  location    String?        // city / wilaya name during transit
+  description String?        // human-readable note for buyer
+  occurredAt  DateTime       @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("delivery_trackings")
+}
+
+// ─── Phase 2C: Notification ───────────────────────────────────────────────────
+
+model Notification {
+  id        String              @id @default(uuid())
+  userId    String
+  type      NotificationType
+  channel   NotificationChannel @default(IN_APP)
+  title     String
+  body      String
+  // Extra context, e.g. { "orderId": "...", "productId": "..." }
+  data      Json                @default("{}")
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ─── Phase 2C: Analytics ──────────────────────────────────────────────────────
+
+model AnalyticsDaily {
+  id           String   @id @default(uuid())
+  date         DateTime @db.Date
+  // Null = nationwide; set to Algerian wilaya code (e.g. "16") to scope
+  wilaya       String?
+  newUsers     Int      @default(0)
+  newProducers Int      @default(0)
+  newBuyers    Int      @default(0)
+  totalOrders  Int      @default(0)
+  totalRevenue Decimal  @db.Decimal(14, 2) @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([date])
+  @@index([wilaya])
+  @@map("analytics_daily")
+}
+
+// ─── Phase 2C: AI ─────────────────────────────────────────────────────────────
+
+model AiRecommendation {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  score     Float    // relevance score 0–1
+  reason    String?  // human-readable explanation shown to buyer
+  seenAt    DateTime?
+  clickedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId, score])
+  @@map("ai_recommendations")
+}
+
+model AiForecast {
+  id              String   @id @default(uuid())
+  // Exactly one of productId or categoryId should be set (enforced at application layer)
+  productId       String?
+  categoryId      String?
+  forecastDate    DateTime @db.Date
+  predictedDemand Decimal  @db.Decimal(12, 2)
+  confidenceScore Float    // 0–1
+  modelVersion    String   @default("v1")
+  createdAt       DateTime @default(now())
+
+  product  Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([productId, forecastDate])
+  @@index([categoryId, forecastDate])
+  @@map("ai_forecasts")
+}
+
+// ─── Phase 2C: Audit Log ──────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  // Null = system-generated action (e.g. automated jobs, cron tasks)
+  actorId    String?
+  targetType String      // Prisma model name, e.g. "User", "Product", "Order"
+  targetId   String
+  action     AuditAction
+  // JSON diff: { "before": { ... }, "after": { ... } }
+  changes    Json        @default("{}")
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+

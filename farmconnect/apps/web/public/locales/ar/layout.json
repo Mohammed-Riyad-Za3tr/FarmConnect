@@ -1,0 +1,24 @@
+{
+  "language": {
+    "currentEnglish": "الإنجليزية",
+    "currentArabic": "العربية",
+    "switchTo": "تغيير اللغة إلى {{locale}}"
+  },
+  "header": {
+    "title": "عناوين التخطيط"
+  },
+  "menu": {
+    "skipToContent": "تخطي إلى المحتوى الرئيسي",
+    "openNavigation": "فتح التنقل",
+    "closeNavigation": "إغلاق التنقل"
+  },
+  "theme": {
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "تلقائي",
+    "switchTo": "السمة: {{mode}} (انقر للتبديل)"
+  },
+  "footer": {
+    "title": "عناوين تذييل التخطيط"
+  }
+}

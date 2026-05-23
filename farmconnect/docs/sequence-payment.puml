@@ -1,0 +1,35 @@
+@startuml
+title Online Payment (Bank/CIB/Edahabia)
+
+actor Buyer
+participant "Web App" as Web
+participant "API" as API
+database "PostgreSQL" as DB
+participant "Payment Gateway" as PG
+participant "Notification" as Notif
+
+Buyer -> Web: Pay online
+Web -> API: POST /payments (orderId, method)
+API -> DB: Create Payment (PENDING)
+API -> PG: Initiate payment
+PG --> API: Payment authorized
+API -> DB: Record PaymentEvent (AUTHORIZED)
+API -> PG: Capture payment
+PG --> API: Payment captured
+API -> DB: Update Payment (PAID)
+API -> DB: Update Order (CONFIRMED)
+API -> DB: Record PaymentEvent (CAPTURED)
+API -> Notif: Notify buyer + producer
+API --> Web: Payment success
+Web --> Buyer: Show receipt
+
+alt Payment failed
+  PG --> API: Failure
+  API -> DB: Update Payment (FAILED)
+  API -> DB: Record PaymentEvent (FAILED)
+  API -> Notif: Notify buyer
+  API --> Web: Payment failed
+  Web --> Buyer: Show error
+end
+
+@enduml

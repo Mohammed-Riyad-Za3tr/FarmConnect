@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+
+actor Buyer
+actor Producer
+actor Admin
+actor "Payment Gateway" as PG
+actor "Delivery Partner" as DP
+
+rectangle "FarmConnect" {
+  (Register / Login) as UC_Login
+  (Manage Profile) as UC_Profile
+  (Browse Products) as UC_Browse
+  (Manage Cart) as UC_Cart
+  (Checkout) as UC_Checkout
+  (Apply Coupon) as UC_Coupon
+  (Pay Online) as UC_PayOnline
+  (Cash on Delivery) as UC_COD
+  (Track Order) as UC_Track
+  (Leave Review) as UC_Review
+  (Favorite Product) as UC_FavProduct
+  (Favorite Producer) as UC_FavProducer
+  (Report Issue) as UC_Report
+
+  (Manage Products) as UC_Products
+  (Manage Orders) as UC_Orders
+  (Update Delivery Status) as UC_Delivery
+  (Request Payout) as UC_Payout
+  (Verify Delivery QR) as UC_QR
+
+  (Verify Producer) as UC_VerifyProducer
+  (Moderate Reports) as UC_Moderate
+  (View Audit Logs) as UC_Audit
+}
+
+Buyer --> UC_Login
+Buyer --> UC_Profile
+Buyer --> UC_Browse
+Buyer --> UC_Cart
+Buyer --> UC_Checkout
+Buyer --> UC_Track
+Buyer --> UC_Review
+Buyer --> UC_FavProduct
+Buyer --> UC_FavProducer
+Buyer --> UC_Report
+
+Producer --> UC_Products
+Producer --> UC_Orders
+Producer --> UC_Delivery
+Producer --> UC_Payout
+Producer --> UC_QR
+
+Admin --> UC_VerifyProducer
+Admin --> UC_Moderate
+Admin --> UC_Audit
+
+UC_Checkout .> UC_Coupon : <<include>>
+UC_Checkout .> UC_PayOnline : <<extend>>
+UC_Checkout .> UC_COD : <<extend>>
+
+PG --> UC_PayOnline
+DP --> UC_Delivery
+
+@enduml

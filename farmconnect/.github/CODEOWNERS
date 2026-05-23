@@ -1,0 +1,15 @@
+# CODEOWNERS — Require review from code owners for changes to critical paths.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback
+* @farmconnect/core-team
+
+# Shared contracts — any change requires extra review
+/packages/shared/         @farmconnect/core-team
+/packages/config/         @farmconnect/core-team
+
+# Database schema — always requires careful review
+/apps/api/prisma/         @farmconnect/core-team
+
+# CI/CD workflows
+/.github/workflows/       @farmconnect/core-team

@@ -1,0 +1,86 @@
+name: Deploy API
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run build/test only without triggering deploy"
+        required: false
+        default: "false"
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/**"
+      - "packages/shared/**"
+      - ".github/workflows/api-cd.yml"
+
+concurrency:
+  group: api-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-api:
+    name: Validate API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: |
+          pnpm --filter @farmconnect/shared build
+          pnpm --filter @farmconnect/api build
+
+      - name: Test API
+        run: pnpm --filter @farmconnect/api test:ci
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/farmconnect_test
+          JWT_ACCESS_SECRET: test-access-secret-that-is-at-least-32-chars
+          JWT_REFRESH_SECRET: test-refresh-secret-that-is-at-least-32-chars
+          CLIENT_URL: http://localhost:5173
+
+  deploy-api:
+    name: Trigger API Deploy Hook
+    runs-on: ubuntu-latest
+    needs: validate-api
+    if: ${{ github.event_name == 'push' || inputs.dry_run != 'true' }}
+
+    steps:
+      - name: Trigger deploy hook (Render/Railway)
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+        run: |
+          if [ -z "$DEPLOY_HOOK_URL" ]; then
+            echo "RENDER_DEPLOY_HOOK_API is not configured"
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "$DEPLOY_HOOK_URL"
+
+  dry-run-note:
+    name: Dry Run Summary
+    runs-on: ubuntu-latest
+    needs: validate-api
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' }}
+
+    steps:
+      - name: Print dry run result
+        run: echo "API dry run completed successfully (deploy hook skipped)."

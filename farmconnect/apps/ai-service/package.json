@@ -1,0 +1,11 @@
+{
+  "name": "@farmconnect/ai-service",
+  "version": "0.0.1",
+  "private": true,
+  "description": "FarmConnect AI service test runner package",
+  "scripts": {
+    "test": "node scripts/python-runner.cjs -m pytest -q",
+    "test:ci": "node scripts/python-runner.cjs -m pytest -q --disable-warnings",
+    "dev": "node scripts/python-runner.cjs main.py"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "language": {
+    "currentEnglish": "English",
+    "currentArabic": "Arabic",
+    "switchTo": "Switch language to {{locale}}"
+  },
+  "header": {
+    "title": "Layout labels"
+  },
+  "menu": {
+    "skipToContent": "Skip to main content",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "Auto",
+    "switchTo": "Theme: {{mode}} (click to switch)"
+  },
+  "footer": {
+    "title": "Layout footer labels"
+  }
+}

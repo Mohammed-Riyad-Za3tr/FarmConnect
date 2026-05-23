@@ -1,0 +1,28 @@
+# VCS and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Node
+node_modules
+**/node_modules
+.pnpm-store
+.turbo
+**/dist
+**/.vite
+
+# Python
+.venv
+**/__pycache__
+**/.pytest_cache
+
+# Local env and logs
+.env
+**/.env
+**/.env.local
+**/*.log
+
+# Build artifacts
+coverage
+**/coverage

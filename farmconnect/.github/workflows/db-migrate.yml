@@ -1,0 +1,65 @@
+name: Database Migrate
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Check migration status only (do not deploy)"
+        required: false
+        default: "false"
+  push:
+    branches: [main]
+    paths:
+      - "apps/api/prisma/**"
+      - ".github/workflows/db-migrate.yml"
+
+concurrency:
+  group: db-migrate-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: Prisma Migration Runbook Job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @farmconnect/api db:generate
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Check migration status
+        run: pnpm --filter @farmconnect/api exec prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Run migrations
+        if: ${{ github.event_name == 'push' || inputs.dry_run != 'true' }}
+        run: pnpm --filter @farmconnect/api db:migrate:deploy
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+
+      - name: Dry run summary
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run == 'true' }}
+        run: |
+          echo "Dry run completed: migration status checked, deploy skipped."

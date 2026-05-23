@@ -1,0 +1,25 @@
+@startuml
+title Place Order (Cash on Delivery)
+
+actor Buyer
+participant "Web App" as Web
+participant "API" as API
+database "PostgreSQL" as DB
+participant "Notification" as Notif
+
+Buyer -> Web: Proceed to checkout
+Web -> API: POST /orders (cart, address, coupon?)
+API -> DB: Validate stock, price, coupon
+API -> DB: Create Order + OrderItems
+API -> DB: Create Payment (UNPAID)
+API -> DB: Create DeliveryVerificationToken
+API -> Notif: Notify producer + buyer
+API --> Web: Order created (status=PENDING)
+Web --> Buyer: Show confirmation
+
+alt Coupon invalid
+  API --> Web: 400 invalid coupon
+  Web --> Buyer: Show error
+end
+
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+title Delivery QR Verification
+
+actor "Delivery Partner" as DP
+participant "Mobile/Web" as App
+participant "API" as API
+database "PostgreSQL" as DB
+participant "Notification" as Notif
+
+DP -> App: Scan QR / enter token
+App -> API: POST /deliveries/verify (token)
+API -> DB: Find order by token
+API -> DB: Update DeliveryStatus=DELIVERED
+API -> DB: Set verifiedAt
+API -> Notif: Notify buyer + producer
+API --> App: Verification success
+
+alt Token invalid or expired
+  API --> App: 400 invalid token
+end
+
+@enduml

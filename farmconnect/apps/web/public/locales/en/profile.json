@@ -1,0 +1,14 @@
+{
+  "latitude": "Latitude",
+  "longitude": "Longitude",
+  "overview": {
+    "title": "Profile",
+    "subtitle": "Profile labels placeholders"
+  },
+  "producer": {
+    "title": "Producer profile placeholders"
+  },
+  "buyer": {
+    "title": "Buyer profile placeholders"
+  }
+}

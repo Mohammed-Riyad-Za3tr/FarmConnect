@@ -1,0 +1,12 @@
+{
+  "list": {
+    "title": "Orders",
+    "subtitle": "Orders list placeholders"
+  },
+  "details": {
+    "title": "Order details placeholders"
+  },
+  "tracking": {
+    "title": "Order tracking placeholders"
+  }
+}
