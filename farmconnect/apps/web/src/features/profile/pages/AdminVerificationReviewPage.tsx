@@ -16,25 +16,34 @@ export function AdminVerificationReviewPage() {
   const allQuery = useAdminProducerVerificationRequests();
   const query = useAdminProducerVerificationRequests(statusFilter === 'ALL' ? undefined : statusFilter);
   const reviewMutation = useReviewAdminProducerVerificationRequest();
+  const [reviewDialog, setReviewDialog] = useState<{
+    requestId: string;
+    action: 'APPROVE' | 'REJECT';
+    notes: string;
+  } | null>(null);
 
-  async function review(requestId: string, action: 'APPROVE' | 'REJECT') {
-    const notes =
-      action === 'REJECT'
-        ? window.prompt(t('admin.producerReview.rejectionReasonPrompt')) ?? ''
-        : window.prompt(t('admin.producerReview.optionalNotesPrompt')) ?? '';
+  function openReviewDialog(requestId: string, action: 'APPROVE' | 'REJECT') {
+    setReviewDialog({ requestId, action, notes: '' });
+  }
 
-    if (action === 'REJECT' && !notes.trim()) {
+  async function submitReview() {
+    if (!reviewDialog) return;
+
+    const notes = reviewDialog.notes.trim();
+
+    if (reviewDialog.action === 'REJECT' && !notes) {
       toast.error(t('admin.producerReview.rejectionReasonRequired'));
       return;
     }
 
     try {
       await reviewMutation.mutateAsync({
-        requestId,
-        payload: { action, notes: notes.trim() || undefined },
+        requestId: reviewDialog.requestId,
+        payload: { action: reviewDialog.action, notes: notes || undefined },
       });
+      setReviewDialog(null);
       toast.success(
-        action === 'APPROVE'
+        reviewDialog.action === 'APPROVE'
           ? t('admin.producerReview.requestApproved')
           : t('admin.producerReview.requestRejected'),
       );
@@ -144,7 +153,7 @@ export function AdminVerificationReviewPage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => latestRequest && review(latestRequest.id, 'APPROVE')}
+                      onClick={() => latestRequest && openReviewDialog(latestRequest.id, 'APPROVE')}
                       disabled={reviewMutation.isPending || !canReview}
                       className="inline-flex items-center gap-1 rounded-lg border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
                     >
@@ -153,7 +162,7 @@ export function AdminVerificationReviewPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => latestRequest && review(latestRequest.id, 'REJECT')}
+                      onClick={() => latestRequest && openReviewDialog(latestRequest.id, 'REJECT')}
                       disabled={reviewMutation.isPending || !canReview}
                       className="inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                     >
@@ -169,6 +178,59 @@ export function AdminVerificationReviewPage() {
           <p className="mt-3 text-sm text-gray-500">{t('admin.producerReview.none')}</p>
         )}
       </div>
+
+      {reviewDialog ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/50 p-4">
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl dark:bg-gray-900">
+            <h2 className="text-base font-semibold text-gray-900 dark:text-white">
+              {reviewDialog.action === 'APPROVE'
+                ? t('admin.producerReview.approve')
+                : t('admin.producerReview.reject')}
+            </h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {reviewDialog.action === 'APPROVE'
+                ? t('admin.producerReview.optionalNotesPrompt')
+                : t('admin.producerReview.rejectionReasonPrompt')}
+            </p>
+
+            <textarea
+              className="mt-3 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+              rows={4}
+              value={reviewDialog.notes}
+              onChange={(event) =>
+                setReviewDialog((prev) =>
+                  prev ? { ...prev, notes: event.target.value } : prev,
+                )
+              }
+              placeholder={
+                reviewDialog.action === 'APPROVE'
+                  ? t('admin.producerReview.optionalNotesPrompt')
+                  : t('admin.producerReview.rejectionReasonPrompt')
+              }
+            />
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setReviewDialog(null)}
+                className="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                {t('common.cancel', { defaultValue: 'Cancel' })}
+              </button>
+              <button
+                type="button"
+                onClick={submitReview}
+                disabled={reviewMutation.isPending}
+                className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+              >
+                {reviewMutation.isPending
+                  ? t('profile.saving')
+                  : t('common.confirm', { defaultValue: 'Confirm' })}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

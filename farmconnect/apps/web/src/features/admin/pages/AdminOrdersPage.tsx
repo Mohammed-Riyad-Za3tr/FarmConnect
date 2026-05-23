@@ -41,6 +41,14 @@ export function AdminOrdersPage() {
   );
 
   const ordersQuery = useAdminOrders(query);
+  const visibleItems = useMemo(() => {
+    const items = ordersQuery.data?.items ?? [];
+    return items.filter((item) => {
+      if (status && item.status !== status) return false;
+      if (paymentStatus && item.paymentStatus !== paymentStatus) return false;
+      return true;
+    });
+  }, [ordersQuery.data?.items, paymentStatus, status]);
 
   return (
     <div className="space-y-4">
@@ -75,10 +83,10 @@ export function AdminOrdersPage() {
 
       {ordersQuery.isLoading ? <p className="text-sm text-gray-500">{t('common.loading')}</p> : null}
 
-      {ordersQuery.data?.items.length ? (
+      {visibleItems.length ? (
         <>
           <div className="space-y-3 md:hidden">
-            {ordersQuery.data.items.map((item) => (
+            {visibleItems.map((item) => (
               <article key={item.id} className="rounded-xl border border-gray-200 bg-white p-4 text-sm dark:border-gray-800 dark:bg-gray-900">
                 <p className="font-semibold text-gray-900 dark:text-white">#{item.id.slice(0, 8)}</p>
                 <p className="mt-1 text-xs font-semibold text-gray-700 dark:text-gray-200">{item.buyer.fullName}</p>
@@ -124,7 +132,7 @@ export function AdminOrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {ordersQuery.data.items.map((item) => (
+                {visibleItems.map((item) => (
                   <tr key={item.id} className="border-t border-gray-100 text-xs text-gray-700 dark:border-gray-800 dark:text-gray-200">
                     <td className="px-4 py-2 font-semibold">#{item.id.slice(0, 8)}</td>
                     <td className="px-4 py-2">

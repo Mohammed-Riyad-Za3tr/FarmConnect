@@ -120,7 +120,7 @@ export function useSubmitProducerVerificationRequest() {
     mutationFn: (payload: SubmitVerificationPayload) => submitProducerVerificationRequestApi(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: profileKeys.verificationStatus });
-      queryClient.invalidateQueries({ queryKey: profileKeys.adminVerification() });
+      queryClient.invalidateQueries({ queryKey: ['profile', 'admin', 'verification-requests'] });
     },
   });
 }
@@ -138,7 +138,7 @@ export function useReviewAdminProducerVerificationRequest() {
     mutationFn: ({ requestId, payload }: { requestId: string; payload: ReviewVerificationPayload }) =>
       reviewAdminProducerVerificationRequestApi(requestId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: profileKeys.adminVerification() });
+      queryClient.invalidateQueries({ queryKey: ['profile', 'admin', 'verification-requests'] });
       queryClient.invalidateQueries({ queryKey: profileKeys.verificationStatus });
     },
   });
