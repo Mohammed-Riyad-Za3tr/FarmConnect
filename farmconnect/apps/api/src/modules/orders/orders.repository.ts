@@ -144,6 +144,18 @@ const cartForCheckoutSelect = {
 } as const;
 
 export const ordersRepository = {
+  listOrderReviewsForBuyer(buyerId: string, orderId: string) {
+    return prisma.review.findMany({
+      where: { buyerId, orderId },
+      select: {
+        id: true,
+        productId: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+      },
+    });
+  },
   findBuyerProfileByUserId(userId: string) {
     return prisma.buyerProfile.findUnique({
       where: { userId },

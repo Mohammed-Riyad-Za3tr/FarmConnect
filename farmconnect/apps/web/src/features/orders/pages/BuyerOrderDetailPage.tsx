@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
@@ -130,6 +130,18 @@ export function BuyerOrderDetailPage() {
       toast.error(getApiErrorMessage(err, t('orders.reviewSubmitFailed')));
     }
   }
+
+  useEffect(() => {
+    const items = query.data?.items ?? [];
+    if (!items.length) return;
+    const reviewed = items.reduce<Record<string, boolean>>((acc, item) => {
+      if (item.review) {
+        acc[item.id] = true;
+      }
+      return acc;
+    }, {});
+    setReviewedItems((prev) => ({ ...prev, ...reviewed }));
+  }, [query.data?.items]);
 
   if (query.isLoading) {
     return <p className="text-sm text-gray-500">{t('orders.loadingOrder')}</p>;

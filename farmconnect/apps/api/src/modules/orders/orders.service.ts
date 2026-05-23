@@ -309,6 +309,9 @@ export const ordersService = {
       throw new NotFoundError('Order');
     }
 
+    const reviews = await ordersRepository.listOrderReviewsForBuyer(userId, orderId);
+    const reviewMap = new Map(reviews.map((review) => [review.productId, review]));
+
     const canAccessRecipes = order.paymentStatus === 'PAID';
     return {
       ...order,
@@ -317,6 +320,7 @@ export const ordersService = {
         return {
           ...item,
           recipePdfUrl: canAccessRecipes ? snapshot.recipePdfUrl ?? null : null,
+          review: item.productId ? reviewMap.get(item.productId) ?? null : null,
         };
       }),
     };

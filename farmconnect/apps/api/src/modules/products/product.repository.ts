@@ -503,7 +503,9 @@ export const productRepository = {
           where,
           orderBy,
           ...(shouldSortInMemory
-            ? { take: Math.max(options.offset + options.limit, options.limit) }
+            ? shouldSortByRating
+              ? {}
+              : { take: Math.max(options.offset + options.limit, options.limit) }
             : { skip: options.offset, take: options.limit }),
           select: publicProductSelect,
         })
@@ -531,7 +533,11 @@ export const productRepository = {
                 const aRating = a.ratingAverage ?? 0;
                 const bRating = b.ratingAverage ?? 0;
                 if (aRating !== bRating) return bRating - aRating;
-                return b.ratingCount - a.ratingCount;
+                if (a.ratingCount !== b.ratingCount) return b.ratingCount - a.ratingCount;
+                const aCreated = new Date(a.createdAt).getTime();
+                const bCreated = new Date(b.createdAt).getTime();
+                if (aCreated !== bCreated) return bCreated - aCreated;
+                return a.id.localeCompare(b.id);
               })
               .slice(options.offset, options.offset + options.limit);
           }
