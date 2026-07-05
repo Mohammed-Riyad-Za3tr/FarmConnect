@@ -2,9 +2,9 @@ const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const repoRoot = path.resolve(__dirname, '..', '..', '..');
-const requirementsFile = path.join(repoRoot, 'apps', 'ai-service', 'requirements.txt');
-const localVenvDir = path.join(repoRoot, '.venv');
+const appRoot = path.resolve(__dirname, '..');
+const requirementsFile = path.join(appRoot, 'requirements.txt');
+const localVenvDir = path.join(appRoot, '.venv');
 const localVenvPython = path.join(
   localVenvDir,
   process.platform === 'win32' ? 'Scripts' : 'bin',
@@ -13,8 +13,8 @@ const localVenvPython = path.join(
 
 const candidates = [
   { cmd: process.env.FARMCONNECT_PYTHON, preArgs: [] },
-  { cmd: path.join(repoRoot, '.venv', 'Scripts', 'python.exe'), preArgs: [] },
-  { cmd: path.join(repoRoot, '.venv', 'bin', 'python3'), preArgs: [] },
+  { cmd: path.join(appRoot, '.venv', 'Scripts', 'python.exe'), preArgs: [] },
+  { cmd: path.join(appRoot, '.venv', 'bin', 'python3'), preArgs: [] },
   { cmd: 'python3', preArgs: [] },
   { cmd: 'python', preArgs: [] },
   { cmd: 'py', preArgs: ['-3'] },
